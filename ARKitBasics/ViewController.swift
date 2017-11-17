@@ -14,7 +14,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
   @IBOutlet weak var sessionInfoView: UIView!
 	@IBOutlet weak var sessionInfoLabel: UILabel!
-	@IBOutlet weak var sceneView: ARSCNView!
+	@IBOutlet weak var sceneView: VirtualObjectARView!
 
   var activeNode: SCNNode?
 
@@ -43,6 +43,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         let configuration = ARWorldTrackingConfiguration()
         configuration.planeDetection = .horizontal
         sceneView.session.run(configuration)
+      sceneView.delegate = self
 
       sceneView.autoenablesDefaultLighting = true
       sceneView.automaticallyUpdatesLighting = true
@@ -76,6 +77,9 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
     let rotateRecognizer = UIRotationGestureRecognizer(target: self, action: #selector(ViewController.didRotate(withGestureRecognizer:)))
     sceneView.addGestureRecognizer(rotateRecognizer)
+
+    let panGesture = ThresholdPanGesture(target: self, action: #selector(ViewController.didPan(withGestureRecognizer:)))
+    sceneView.addGestureRecognizer(panGesture)
   }
 
   @objc func didRotate(withGestureRecognizer recognizer: UIRotationGestureRecognizer) {
@@ -84,6 +88,42 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
     activeNode?.eulerAngles.y -= Float(recognizer.rotation)
 
     recognizer.rotation = 0
+  }
+
+  @objc func didPan(withGestureRecognizer recognizer: ThresholdPanGesture) {
+    switch recognizer.state {
+    case .began:
+      break
+    case .changed where recognizer.isThresholdExceeded:
+      guard let object = activeNode else { return }
+      let translation = recognizer.translation(in: sceneView)
+
+      let currentPosition = CGPoint(sceneView.projectPoint(object.position))
+
+      // The `currentTrackingPosition` is used to update the `selectedObject` in `updateObjectToCurrentTrackingPosition()`.
+      let currentTrackingPosition = CGPoint(x: currentPosition.x + translation.x, y: currentPosition.y + translation.y)
+      recognizer.setTranslation(.zero, in: sceneView)
+
+      translate(object, basedOn: currentTrackingPosition, infinitePlane: true)
+    case .changed:
+      // Ignore changes to the pan gesture until the threshold for displacment has been exceeded.
+      break
+
+    default:
+      break
+    }
+  }
+
+  private func translate(_ object: SCNNode, basedOn screenPos: CGPoint, infinitePlane: Bool) {
+    guard let (position, _, _) = sceneView.worldPosition(fromScreenPosition: screenPos,
+                                                             objectPosition: object.simdPosition,
+                                                             infinitePlane: infinitePlane) else { return }
+
+    /*
+     Plane hit test results are generally smooth. If we did *not* hit a plane,
+     smooth the movement to prevent large jumps.
+     */
+    object.position = SCNVector3(x: position.x, y: position.y, z: position.z)
   }
 
   @objc func didTap(withGestureRecognizer recognizer: UITapGestureRecognizer) {
@@ -128,42 +168,6 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
     sceneView.scene.rootNode.addChildNode(boxNode)
   }
-
-    // MARK: - ARSessionDelegate
-
-    func session(_ session: ARSession, didAdd anchors: [ARAnchor]) {
-        guard let frame = session.currentFrame else { return }
-        updateSessionInfoLabel(for: frame, trackingState: frame.camera.trackingState)
-    }
-
-    func session(_ session: ARSession, didRemove anchors: [ARAnchor]) {
-        guard let frame = session.currentFrame else { return }
-        updateSessionInfoLabel(for: frame, trackingState: frame.camera.trackingState)
-    }
-
-    func session(_ session: ARSession, cameraDidChangeTrackingState camera: ARCamera) {
-        updateSessionInfoLabel(for: session.currentFrame!, trackingState: camera.trackingState)
-    }
-
-    // MARK: - ARSessionObserver
-	
-	func sessionWasInterrupted(_ session: ARSession) {
-		// Inform the user that the session has been interrupted, for example, by presenting an overlay.
-		sessionInfoLabel.text = "Session was interrupted"
-	}
-	
-	func sessionInterruptionEnded(_ session: ARSession) {
-		// Reset tracking and/or remove existing anchors if consistent tracking is required.
-		sessionInfoLabel.text = "Session interruption ended"
-		resetTracking()
-	}
-    
-    func session(_ session: ARSession, didFailWithError error: Error) {
-        // Present an error message to the user.
-        sessionInfoLabel.text = "Session failed: \(error.localizedDescription)"
-        resetTracking()
-    }
-
     // MARK: - Private methods
 
     private func updateSessionInfoLabel(for frame: ARFrame, trackingState: ARCamera.TrackingState) {
@@ -210,3 +214,4 @@ extension float4x4 {
     return float3(translation.x, translation.y, translation.z)
   }
 }
+
