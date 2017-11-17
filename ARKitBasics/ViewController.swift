@@ -12,7 +12,7 @@ import ARKit
 class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 	// MARK: - IBOutlets
 
-    @IBOutlet weak var sessionInfoView: UIView!
+  @IBOutlet weak var sessionInfoView: UIView!
 	@IBOutlet weak var sessionInfoLabel: UILabel!
 	@IBOutlet weak var sceneView: ARSCNView!
 
@@ -42,9 +42,12 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         configuration.planeDetection = .horizontal
         sceneView.session.run(configuration)
 
+      sceneView.autoenablesDefaultLighting = true
+      sceneView.automaticallyUpdatesLighting = true
+
         // Set a delegate to track the number of plane anchors for providing UI feedback.
-        sceneView.session.delegate = self
-        
+//        sceneView.session.delegate = self
+
         /*
          Prevent the screen from being dimmed after a while as users will likely
          have long periods of interaction without touching the screen or buttons.
@@ -61,6 +64,56 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 		// Pause the view's AR session.
 		sceneView.session.pause()
 	}
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    addBox()
+    addTapGestureToSceneView()
+  }
+
+  func addTapGestureToSceneView() {
+    let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(ViewController.didTap(withGestureRecognizer:)))
+    sceneView.addGestureRecognizer(tapRecognizer)
+  }
+
+  @objc func didTap(withGestureRecognizer recognizer: UITapGestureRecognizer) {
+    let tapLocation = recognizer.location(in: sceneView)
+    let hitTestResults = sceneView.hitTest(tapLocation)
+
+    guard let node = hitTestResults.first?.node else { return }
+    node.removeFromParentNode()
+  }
+
+  func addBox(x: Float = 0, y: Float = 0, z: Float = -0.2) {
+    let box = SCNBox(width: 0.72, height: 0.42, length: 0.05, chamferRadius: 0)
+
+    let greenMaterial = SCNMaterial()
+    greenMaterial.diffuse.contents = #imageLiteral(resourceName: "samsung-tv")
+    greenMaterial.locksAmbientWithDiffuse = true;
+    let redMaterial = SCNMaterial()
+    redMaterial.diffuse.contents = UIColor.red
+    redMaterial.locksAmbientWithDiffuse = true;
+    let blueMaterial  = SCNMaterial()
+    blueMaterial.diffuse.contents = #imageLiteral(resourceName: "samsung-tv")
+    blueMaterial.locksAmbientWithDiffuse = true;
+    let yellowMaterial = SCNMaterial()
+    yellowMaterial.diffuse.contents = UIColor.yellow
+    yellowMaterial.locksAmbientWithDiffuse = true;
+    let purpleMaterial = SCNMaterial()
+    purpleMaterial.diffuse.contents = UIColor.purple
+    purpleMaterial.locksAmbientWithDiffuse = true;
+    let WhiteMaterial = SCNMaterial()
+    WhiteMaterial.diffuse.contents = UIColor.white
+    WhiteMaterial.locksAmbientWithDiffuse   = true;
+
+    box.materials = [greenMaterial, redMaterial, blueMaterial, yellowMaterial, purpleMaterial, WhiteMaterial]
+
+    let boxNode = SCNNode()
+    boxNode.geometry = box
+    boxNode.position = SCNVector3(0, 0, -0.2)
+
+    sceneView.scene.rootNode.addChildNode(boxNode)
+  }
 	
 	// MARK: - ARSCNViewDelegate
     
@@ -70,9 +123,10 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
 
         // Create a SceneKit plane to visualize the plane anchor using its position and extent.
-        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
-        let planeNode = SCNNode(geometry: plane)
-        planeNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
+//        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
+        let box = SCNBox(width: CGFloat(planeAnchor.extent.x), height: 30, length: CGFloat(planeAnchor.extent.y), chamferRadius: 0)
+        let planeNode = SCNNode(geometry: box)
+        planeNode.simdPosition = float3(planeAnchor.center.x, 30, planeAnchor.center.z)
         
         /*
          `SCNPlane` is vertically oriented in its local coordinate space, so
@@ -95,11 +149,11 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         // Update content only for plane anchors and nodes matching the setup created in `renderer(_:didAdd:for:)`.
         guard let planeAnchor = anchor as?  ARPlaneAnchor,
             let planeNode = node.childNodes.first,
-            let plane = planeNode.geometry as? SCNPlane
+            let plane = planeNode.geometry as? SCNBox
             else { return }
         
         // Plane estimation may shift the center of a plane relative to its anchor's transform.
-        planeNode.simdPosition = float3(planeAnchor.center.x, 0, planeAnchor.center.z)
+        planeNode.simdPosition = float3(planeAnchor.center.x, 30, planeAnchor.center.z)
         
         /*
          Plane estimation may extend the size of the plane, or combine previously detected
@@ -108,7 +162,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
          the remaining plane.
         */
         plane.width = CGFloat(planeAnchor.extent.x)
-        plane.height = CGFloat(planeAnchor.extent.z)
+        plane.length = CGFloat(planeAnchor.extent.z)
+        plane.height = 30
     }
 
     // MARK: - ARSessionDelegate
@@ -184,4 +239,11 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         configuration.planeDetection = .horizontal
         sceneView.session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
     }
+}
+
+extension float4x4 {
+  var translation: float3 {
+    let translation = self.columns.3
+    return float3(translation.x, translation.y, translation.z)
+  }
 }
