@@ -16,7 +16,18 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 	@IBOutlet weak var sessionInfoLabel: UILabel!
 	@IBOutlet weak var sceneView: VirtualObjectARView!
 
+  @IBOutlet weak var rightButton: UIButton!
   var activeNode: SCNNode?
+  @IBOutlet weak var leftButton: UIButton!
+
+  @IBOutlet weak var inchSizeBox: UILabel!
+  let sizes = [
+    (height: 0.569, width: 0.9758, length: 0.0626, inchSize: 43),
+    (height: 0.6477, width: 1.1079, length: 0.0534, inchSize: 49),
+    (height: 0.7105, width: 1.2261, length: 0.0548, inchSize: 55)
+  ]
+
+  var activeSize = 0
 
 	// MARK: - View Life Cycle
 	
@@ -58,7 +69,15 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
         sceneView.showsStatistics = true
     }
 	
-	override func viewWillDisappear(_ animated: Bool) {
+  @IBAction func didTapLeft(_ sender: Any) {
+    activeNode?.worldPosition = SCNVector3(x: activeNode!.worldPosition.x - 0.10, y: activeNode!.worldPosition.y, z: activeNode!.worldPosition.z)
+  }
+
+  @IBAction func didTapRight(_ sender: Any) {
+    activeNode?.worldPosition = SCNVector3(x: activeNode!.worldPosition.x + 0.10, y: activeNode!.worldPosition.y, z: activeNode!.worldPosition.z)
+  }
+
+  override func viewWillDisappear(_ animated: Bool) {
 		super.viewWillDisappear(animated)
 		
 		// Pause the view's AR session.
@@ -72,7 +91,7 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
   }
 
   func addTapGestureToSceneView() {
-    let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(ViewController.didTap(withGestureRecognizer:)))
+    let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(ViewController.didTap(withGestureRecognizer:)));
     sceneView.addGestureRecognizer(tapRecognizer)
 
     let rotateRecognizer = UIRotationGestureRecognizer(target: self, action: #selector(ViewController.didRotate(withGestureRecognizer:)))
@@ -80,6 +99,10 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
     let panGesture = ThresholdPanGesture(target: self, action: #selector(ViewController.didPan(withGestureRecognizer:)))
     sceneView.addGestureRecognizer(panGesture)
+  }
+
+  @objc func didTap(withGestureRecognizer recognizer: UITapGestureRecognizer) {
+    toggleBoxSize()
   }
 
   @objc func didRotate(withGestureRecognizer recognizer: UIRotationGestureRecognizer) {
@@ -126,43 +149,47 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
     object.position = SCNVector3(x: position.x, y: position.y, z: position.z)
   }
 
-  @objc func didTap(withGestureRecognizer recognizer: UITapGestureRecognizer) {
-    let tapLocation = recognizer.location(in: sceneView)
-    let hitTestResultsWithFeaturePoints = sceneView.hitTest(tapLocation, types: .featurePoint)
+  func toggleBoxSize() {
+    let box = activeNode?.geometry as! SCNBox
 
-    if let hitTestResultsWithFeaturePoints = hitTestResultsWithFeaturePoints.first {
-      let translation = hitTestResultsWithFeaturePoints.worldTransform.translation
-      addBox(x: translation.x, y: translation.y, z: translation.z)
-    }
+    let size = sizes[activeSize]
+    box.height = CGFloat(size.height)
+    box.width = CGFloat(size.width)
+    box.length = CGFloat(size.length)
+    inchSizeBox.text = "\(size.inchSize)\""
+
+    activeSize += 1
+    activeSize = activeSize % sizes.count
   }
 
-  func addBox(x: Float = 0, y: Float = 0, z: Float = -0.2) {
-    let box = SCNBox(width: 0.72, height: 0.42, length: 0.05, chamferRadius: 0)
+  func addBox() {
+    let box = SCNBox(width: 0.9758, height: 0.569, length: 0.0626, chamferRadius: 0)
+    inchSizeBox.text = "43\""
 
     let greenMaterial = SCNMaterial()
     greenMaterial.diffuse.contents = #imageLiteral(resourceName: "samsung-tv")
     greenMaterial.locksAmbientWithDiffuse = true;
     let redMaterial = SCNMaterial()
-    redMaterial.diffuse.contents = UIColor.red
+    redMaterial.diffuse.contents = UIColor.clear
     redMaterial.locksAmbientWithDiffuse = true;
     let blueMaterial  = SCNMaterial()
-    blueMaterial.diffuse.contents = #imageLiteral(resourceName: "samsung-tv")
+    blueMaterial.diffuse.contents = UIColor.black
     blueMaterial.locksAmbientWithDiffuse = true;
     let yellowMaterial = SCNMaterial()
-    yellowMaterial.diffuse.contents = UIColor.yellow
+    yellowMaterial.diffuse.contents = UIColor.clear
     yellowMaterial.locksAmbientWithDiffuse = true;
     let purpleMaterial = SCNMaterial()
-    purpleMaterial.diffuse.contents = UIColor.purple
+    purpleMaterial.diffuse.contents = UIColor.clear
     purpleMaterial.locksAmbientWithDiffuse = true;
     let WhiteMaterial = SCNMaterial()
-    WhiteMaterial.diffuse.contents = UIColor.white
+    WhiteMaterial.diffuse.contents = UIColor.clear
     WhiteMaterial.locksAmbientWithDiffuse   = true;
 
     box.materials = [greenMaterial, redMaterial, blueMaterial, yellowMaterial, purpleMaterial, WhiteMaterial]
 
     let boxNode = SCNNode()
     boxNode.geometry = box
-    boxNode.position = SCNVector3(x, y, z)
+    boxNode.position = SCNVector3(0, 0, -0.2)
 
     activeNode = boxNode
 

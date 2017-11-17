@@ -54,19 +54,48 @@
                                     </userDefinedRuntimeAttribute>
                                 </userDefinedRuntimeAttributes>
                             </visualEffectView>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="W2r-V5-7dG">
+                                <rect key="frame" x="16" y="328.5" width="30" height="30"/>
+                                <state key="normal" title="Left"/>
+                                <connections>
+                                    <action selector="didTapLeft:" destination="7dh-A0-qGE" eventType="touchUpInside" id="VEL-nh-6YR"/>
+                                </connections>
+                            </button>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Inch" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="hmq-Wy-kgU">
+                                <rect key="frame" x="326" y="613" width="33" height="21"/>
+                                <fontDescription key="fontDescription" type="system" pointSize="17"/>
+                                <nil key="textColor"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="OHX-Lz-cba">
+                                <rect key="frame" x="323" y="328.5" width="36" height="30"/>
+                                <state key="normal" title="Right"/>
+                                <connections>
+                                    <action selector="didTapRight:" destination="7dh-A0-qGE" eventType="touchUpInside" id="Wdp-qL-Wyy"/>
+                                </connections>
+                            </button>
                         </subviews>
                         <color key="backgroundColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstAttribute="bottom" secondItem="BrB-h1-WRS" secondAttribute="bottom" id="8rY-15-6Ru"/>
+                            <constraint firstItem="71x-2l-AWw" firstAttribute="bottom" secondItem="hmq-Wy-kgU" secondAttribute="bottom" constant="33" id="958-HJ-yyW"/>
+                            <constraint firstItem="W2r-V5-7dG" firstAttribute="centerY" secondItem="71x-2l-AWw" secondAttribute="centerY" id="L41-RU-Dpu"/>
                             <constraint firstItem="BrB-h1-WRS" firstAttribute="leading" secondItem="71x-2l-AWw" secondAttribute="leading" id="QIa-Ri-qJo"/>
                             <constraint firstItem="71x-2l-AWw" firstAttribute="trailing" secondItem="BrB-h1-WRS" secondAttribute="trailing" id="a3B-9u-pb1"/>
+                            <constraint firstItem="71x-2l-AWw" firstAttribute="trailing" secondItem="hmq-Wy-kgU" secondAttribute="trailing" constant="16" id="cjl-Q7-qN0"/>
                             <constraint firstItem="71x-2l-AWw" firstAttribute="bottom" secondItem="37h-bD-Iyn" secondAttribute="bottom" constant="33" id="j5m-RQ-OjM"/>
                             <constraint firstItem="37h-bD-Iyn" firstAttribute="leading" secondItem="71x-2l-AWw" secondAttribute="leading" constant="15" id="lLK-x7-VyJ"/>
+                            <constraint firstItem="71x-2l-AWw" firstAttribute="trailing" secondItem="OHX-Lz-cba" secondAttribute="trailing" constant="16" id="ocs-pw-5aJ"/>
+                            <constraint firstItem="W2r-V5-7dG" firstAttribute="leading" secondItem="71x-2l-AWw" secondAttribute="leading" constant="16" id="q3f-j8-3CF"/>
+                            <constraint firstItem="OHX-Lz-cba" firstAttribute="centerY" secondItem="71x-2l-AWw" secondAttribute="centerY" id="svm-LK-ISZ"/>
                             <constraint firstAttribute="top" secondItem="BrB-h1-WRS" secondAttribute="top" id="ulI-xa-35w"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="71x-2l-AWw"/>
                     </view>
                     <connections>
+                        <outlet property="inchSizeBox" destination="hmq-Wy-kgU" id="pMM-nm-16f"/>
+                        <outlet property="leftButton" destination="W2r-V5-7dG" id="aZc-3c-Eft"/>
+                        <outlet property="rightButton" destination="OHX-Lz-cba" id="WGh-2b-oda"/>
                         <outlet property="sceneView" destination="BrB-h1-WRS" id="sgr-g8-kdG"/>
                         <outlet property="sessionInfoLabel" destination="hCE-IA-wLv" id="fqx-0o-IdX"/>
                         <outlet property="sessionInfoView" destination="37h-bD-Iyn" id="e6g-gN-reW"/>
