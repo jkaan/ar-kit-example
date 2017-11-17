@@ -16,6 +16,8 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 	@IBOutlet weak var sessionInfoLabel: UILabel!
 	@IBOutlet weak var sceneView: ARSCNView!
 
+  var activeNode: SCNNode?
+
 	// MARK: - View Life Cycle
 	
     /// - Tag: StartARSession
@@ -45,9 +47,6 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
       sceneView.autoenablesDefaultLighting = true
       sceneView.automaticallyUpdatesLighting = true
 
-        // Set a delegate to track the number of plane anchors for providing UI feedback.
-//        sceneView.session.delegate = self
-
         /*
          Prevent the screen from being dimmed after a while as users will likely
          have long periods of interaction without touching the screen or buttons.
@@ -74,14 +73,27 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
   func addTapGestureToSceneView() {
     let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(ViewController.didTap(withGestureRecognizer:)))
     sceneView.addGestureRecognizer(tapRecognizer)
+
+    let rotateRecognizer = UIRotationGestureRecognizer(target: self, action: #selector(ViewController.didRotate(withGestureRecognizer:)))
+    sceneView.addGestureRecognizer(rotateRecognizer)
+  }
+
+  @objc func didRotate(withGestureRecognizer recognizer: UIRotationGestureRecognizer) {
+    guard recognizer.state == .changed else { return }
+
+    activeNode?.eulerAngles.y -= Float(recognizer.rotation)
+
+    recognizer.rotation = 0
   }
 
   @objc func didTap(withGestureRecognizer recognizer: UITapGestureRecognizer) {
     let tapLocation = recognizer.location(in: sceneView)
-    let hitTestResults = sceneView.hitTest(tapLocation)
+    let hitTestResultsWithFeaturePoints = sceneView.hitTest(tapLocation, types: .featurePoint)
 
-    guard let node = hitTestResults.first?.node else { return }
-    node.removeFromParentNode()
+    if let hitTestResultsWithFeaturePoints = hitTestResultsWithFeaturePoints.first {
+      let translation = hitTestResultsWithFeaturePoints.worldTransform.translation
+      addBox(x: translation.x, y: translation.y, z: translation.z)
+    }
   }
 
   func addBox(x: Float = 0, y: Float = 0, z: Float = -0.2) {
@@ -110,61 +122,12 @@ class ViewController: UIViewController, ARSCNViewDelegate, ARSessionDelegate {
 
     let boxNode = SCNNode()
     boxNode.geometry = box
-    boxNode.position = SCNVector3(0, 0, -0.2)
+    boxNode.position = SCNVector3(x, y, z)
+
+    activeNode = boxNode
 
     sceneView.scene.rootNode.addChildNode(boxNode)
   }
-	
-	// MARK: - ARSCNViewDelegate
-    
-    /// - Tag: PlaceARContent
-	func renderer(_ renderer: SCNSceneRenderer, didAdd node: SCNNode, for anchor: ARAnchor) {
-        // Place content only for anchors found by plane detection.
-        guard let planeAnchor = anchor as? ARPlaneAnchor else { return }
-
-        // Create a SceneKit plane to visualize the plane anchor using its position and extent.
-//        let plane = SCNPlane(width: CGFloat(planeAnchor.extent.x), height: CGFloat(planeAnchor.extent.z))
-        let box = SCNBox(width: CGFloat(planeAnchor.extent.x), height: 30, length: CGFloat(planeAnchor.extent.y), chamferRadius: 0)
-        let planeNode = SCNNode(geometry: box)
-        planeNode.simdPosition = float3(planeAnchor.center.x, 30, planeAnchor.center.z)
-        
-        /*
-         `SCNPlane` is vertically oriented in its local coordinate space, so
-         rotate the plane to match the horizontal orientation of `ARPlaneAnchor`.
-        */
-        planeNode.eulerAngles.x = -.pi / 2
-        
-        // Make the plane visualization semitransparent to clearly show real-world placement.
-        planeNode.opacity = 0.25
-        
-        /*
-         Add the plane visualization to the ARKit-managed node so that it tracks
-         changes in the plane anchor as plane estimation continues.
-        */
-        node.addChildNode(planeNode)
-	}
-
-    /// - Tag: UpdateARContent
-    func renderer(_ renderer: SCNSceneRenderer, didUpdate node: SCNNode, for anchor: ARAnchor) {
-        // Update content only for plane anchors and nodes matching the setup created in `renderer(_:didAdd:for:)`.
-        guard let planeAnchor = anchor as?  ARPlaneAnchor,
-            let planeNode = node.childNodes.first,
-            let plane = planeNode.geometry as? SCNBox
-            else { return }
-        
-        // Plane estimation may shift the center of a plane relative to its anchor's transform.
-        planeNode.simdPosition = float3(planeAnchor.center.x, 30, planeAnchor.center.z)
-        
-        /*
-         Plane estimation may extend the size of the plane, or combine previously detected
-         planes into a larger one. In the latter case, `ARSCNView` automatically deletes the
-         corresponding node for one plane, then calls this method to update the size of
-         the remaining plane.
-        */
-        plane.width = CGFloat(planeAnchor.extent.x)
-        plane.length = CGFloat(planeAnchor.extent.z)
-        plane.height = 30
-    }
 
     // MARK: - ARSessionDelegate
 
